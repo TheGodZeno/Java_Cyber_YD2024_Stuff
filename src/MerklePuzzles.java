@@ -3,68 +3,94 @@ import MerklesPuzzles.Bob;
 import MerklesPuzzles.Eve;
 
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MerklePuzzles {
-    public static void main(String args[]){
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^([a-zA-Z_]+)\\[(\\d+)\\]\\[(\\d+)\\]$");
+
+    public static void main(String args[]) {
         Alice alice = new Alice();
         Bob bob = new Bob();
         Eve eve = new Eve();
         Scanner scanner = new Scanner(System.in);
-        boolean validFlag = false;
+
         String[] commands = {"Alice_createPuzzles[K][N]", "Bob_choosePuzzle", "Alice_findKey[number]", "Eve_findKey[number]", "fullTest[K][N]", "Exit"};
+        boolean validFlag = false;
+
         System.out.println("Enter one of the following commands: ");
         printCommands();
-        while(true){
-            String user_command = scanner.nextLine();
-            if(Arrays.asList(commands).contains(user_command)){
-                if(user_command.equals(commands[0])){
-                    System.out.println("Choose K:");
-                    int K = scanner.nextInt();
-                    System.out.println("Choose N:");
-                    int N = scanner.nextInt();
-                    alice.createPuzzles(N, K);
-                    validFlag = true;
-                    printCommands();
-                } else if(!validFlag && !user_command.equals(commands[4])){
-                    System.out.println("You need to run the first command first.");
-                    printCommands();
-                } else if(user_command.equals(commands[1])) {
-                    String[] bob_res = bob.choosePuzzle(alice.getPuzzles());
-                    System.out.println("The serial number is: " + bob_res[0] + ".\nThe key is: " + bob_res[1] + ".");
-                    printCommands();
-                } else if(user_command.equals(commands[2])) {
-                    System.out.println("Choose a Serial Number:");
-                    String alice_serial_number = scanner.nextLine();
-                    String[] alice_res = alice.findKey(Integer.parseInt(alice_serial_number, 2));
-                    System.out.println("The key is: " + alice_res[2] + ".\nThe number of comparisons is " + alice_res[0] + ".");
-                    printCommands();
-                } else if(user_command.equals(commands[3])){
-                    System.out.println("Choose a Serial Number:");
-                    String eve_serial_number = scanner.nextLine();
-                    String[] eve_res = eve.findKey(alice.getPuzzles(), eve_serial_number);
-                    System.out.println("Eve found that for serial_number that bob chose: " + eve_res[0] + ".\nThe corresponding key is: " + eve_res[1] + ".\nThe number of comparisons for eve is " + eve_res[2]);
-                    printCommands();
-                } else if(user_command.equals(commands[4])){
-                    System.out.println("Choose K:");
-                    int K = scanner.nextInt();
-                    System.out.println("Choose N:");
-                    int N = scanner.nextInt();
-                    alice.createPuzzles(N, K);
-                    validFlag = true;
-                    String[] bob_res = bob.choosePuzzle(alice.getPuzzles());
-                    System.out.println("The serial number is: " + bob_res[0] + ".\nThe key is: " + bob_res[1]);
-                    String[] alice_res = alice.findKey(Integer.parseInt(bob_res[0], 2));
-                    System.out.println("Alice:\nThe serial number is: " + alice_res[1] + ".\nThe key is: " + alice_res[2] + ".\nThe number of comparisons is " + alice_res[0] + ".");
-                    String[] eve_res = eve.findKey(alice.getPuzzles(), bob_res[0]);
-                    System.out.println("Eve:\nEve found that for the serial number that bob chose: " + eve_res[0] + ".\nThe corresponding key is: " + eve_res[1] + ".\nThe number of comparisons for eve is " + eve_res[2] + ".");
-                    break;
-                } else if(user_command.equals(commands[5])){
-                    break;
-                } else{
-                    System.out.println("Enter a valid command from this list.");
-                    printCommands();
+
+        while (true) {
+            String userCommand = scanner.nextLine();
+
+            Matcher matcher = COMMAND_PATTERN.matcher(userCommand);
+            if (matcher.matches()) {
+                String command = matcher.group(1);
+                int arg1 = Integer.parseInt(matcher.group(2));
+                int arg2 = Integer.parseInt(matcher.group(3));
+
+                switch (command) {
+                    case "Alice_createPuzzles":
+                        alice.createPuzzles(arg2, arg1);
+                        validFlag = true;
+                        break;
+
+                    case "Bob_choosePuzzle":
+                        if (!validFlag) {
+                            System.out.println("You need to run the first command first.");
+                            break;
+                        }
+                        String[] bobRes = bob.choosePuzzle(alice.getPuzzles());
+                        System.out.println("The serial number is: " + bobRes[0] + ".\nThe key is: " + bobRes[1] + ".");
+                        break;
+
+                    case "Alice_findKey":
+                        System.out.println("Choose a Serial Number:");
+                        try {
+                            int aliceSerialNumber = scanner.nextInt();
+                            String[] aliceRes = alice.findKey(aliceSerialNumber);
+                            System.out.println("The key is: " + aliceRes[2] + ".\nThe number of comparisons is " + aliceRes[0] + ".");
+                        } catch (InputMismatchException e) {
+                            System.out.println("Invalid input. Please enter a valid number.");
+                        } finally {
+                            scanner.nextLine(); // Consume the remaining newline
+                        }
+                        break;
+
+                    case "Eve_findKey":
+                        System.out.println("Choose a Serial Number:");
+                        try {
+                            int eveSerialNumber = scanner.nextInt();
+                            String[] eveRes = eve.findKey(alice.getPuzzles(), Integer.toBinaryString(eveSerialNumber));
+                            System.out.println("Eve found that for serial_number that bob chose: " + eveRes[0] + ".\nThe corresponding key is: " + eveRes[1] + ".\nThe number of comparisons for eve is " + eveRes[2]);
+                        } catch (InputMismatchException e) {
+                            System.out.println("Invalid input. Please enter a valid number.");
+                        } finally {
+                            scanner.nextLine(); // Consume the remaining newline
+                        }
+                        break;
+
+                    case "fullTest":
+                        alice.createPuzzles(arg2, arg1);
+                        validFlag = true;
+                        String[] bobRes_2 = bob.choosePuzzle(alice.getPuzzles());
+                        System.out.println("The serial number is: " + bobRes_2[0] + ".\nThe key is: " + bobRes_2[1]);
+                        String[] aliceRes = alice.findKey(Integer.parseInt(bobRes_2[0], 2));
+                        System.out.println("Alice:\nThe serial number is: " + Integer.toBinaryString(Integer.parseInt(aliceRes[1])) + ".\nThe key is: " + aliceRes[2] + ".\nThe number of comparisons is " + aliceRes[0] + ".");
+                        String[] eveRes = eve.findKey(alice.getPuzzles(), bobRes_2[0]);
+                        System.out.println("Eve:\nEve found that for the serial number that bob chose: " + eveRes[0] + ".\nThe corresponding key is: " + eveRes[1] + ".\nThe number of comparisons for eve is " + eveRes[2] + ".");
+                        return;
+
+                    case "Exit":
+                        return;
+
+                    default:
+                        System.out.println("Enter a valid command from this list.");
                 }
+                printCommands();
             } else {
                 System.out.println("Enter a valid command from this list.");
                 printCommands();
@@ -72,7 +98,7 @@ public class MerklePuzzles {
         }
     }
 
-    public static void printCommands(){
+    public static void printCommands() {
         System.out.println("1. Alice_createPuzzles[K][N].");
         System.out.println("2. Bob_choosePuzzle.");
         System.out.println("3. Alice_findKey[number].");

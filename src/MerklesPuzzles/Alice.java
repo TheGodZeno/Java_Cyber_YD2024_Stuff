@@ -2,12 +2,10 @@ package MerklesPuzzles;
 
 import Trees.AvlTree;
 import Trees.BinarySearchTree;
-import Trees.Node;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
-public class Alice {
+public class Alice extends XORUtil{
     public int[][][] _puzzles;
     BinarySearchTree answers = new AvlTree();
 
@@ -69,23 +67,6 @@ public class Alice {
         }
 
         return copy;
-    }
-
-    public static String bitwiseXORArrayOperation(int[] numbers) {
-        String res = "";
-        for(int number: numbers){
-            res += Integer.toString(bitwiseXOROperation(number));
-        }
-        return res; //Integer.parseInt(res, 2);
-    }
-
-    public static int bitwiseXOROperation(int number) {
-        int result = 0;
-        while (number > 0) {
-            result ^= (number & 1);
-            number >>= 1;
-        }
-        return result;
     }
 
     public String[] findKey(int s_num){
